@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import List, Tuple, Dict, Set
 from components.card import Card
 import components.util as util
+import random
 
 class Player(object):
     def __init__(self, name: str, ast_ranking: int, handcards: List[Card]) -> None:
@@ -214,6 +215,11 @@ class Player(object):
                         self.handcards.remove(card)
                         cards.append(card)
                         break
+
+    def draw_card(self, other:Player) -> None:
+        card = random.choice(other.handcards)
+        other.handcards.remove(card)
+        self.handcards.append(card)
 
     def order_cities(self) -> Tuple[int, int]:
         return (self.cities, self.ast_ranking)

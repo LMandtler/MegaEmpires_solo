@@ -7,19 +7,45 @@ import json
 import jsonpickle
 from pathlib import Path
 
+
 def print_step() -> None:
     print('____________________________________________________________')
 
+
 class Game(object):
-    def __init__(self, config: Dict) -> None:
+    def __init__(self, config: Dict, options: Dict) -> None:
         self.stacks = {1: [], 2: [], 3: [], 4: [],
                        5: [], 6: [], 7: [], 8: [], 9: []}
-        top_stacks = self.prepare_stacks_from_config(config['top'])
-        middle_stacks = self.prepare_stacks_from_config(config['middle'])
-        bottom_stacks = self.prepare_stacks_from_config(config['bottom'])
-        self.add_cards_to_stacks(top_stacks)
-        self.add_cards_to_stacks(middle_stacks)
-        self.add_cards_to_stacks(bottom_stacks)
+
+        config = config[options.player][options.map]
+
+        if options.player == "5":
+            top_stacks = self.prepare_stacks_from_config(
+                config['top'], options)
+            bottom_stacks = self.prepare_stacks_from_config(
+                config['bottom'], options)
+
+            self.shuffle_stacks_with_configuration(top_stacks, options)
+            self.shuffle_stacks(bottom_stacks)
+
+            self.add_cards_to_stacks(top_stacks)
+            self.add_cards_to_stacks(bottom_stacks)
+
+        if options.player == "9":
+            top_stacks = self.prepare_stacks_from_config(
+                config['top'], options)
+            middle_stacks = self.prepare_stacks_from_config(
+                config['middle'], options)
+            bottom_stacks = self.prepare_stacks_from_config(
+                config['bottom'], options)
+
+            self.shuffle_stacks(top_stacks)
+            self.shuffle_stacks(middle_stacks)
+            self.shuffle_stacks(bottom_stacks)
+
+            self.add_cards_to_stacks(top_stacks)
+            self.add_cards_to_stacks(middle_stacks)
+            self.add_cards_to_stacks(bottom_stacks)
 
         self.prepare_players_from_config(config['players'])
 
@@ -36,7 +62,7 @@ class Game(object):
             "Corruption": self.resolve_corruption,
         }
 
-    def prepare_stacks_from_config(self, config: Dict) -> Dict[int, List[Card]]:
+    def prepare_stacks_from_config(self, config: Dict, options: Dict) -> Dict[int, List[Card]]:
         stacks = {}
         for item in config:
             cards = [Card(item['name'], item['value'], item['count'], item['calamity'],
@@ -45,10 +71,28 @@ class Game(object):
                 stacks[abs(item['value'])].extend(cards)
             else:
                 stacks[abs(item['value'])] = cards
+        return stacks
 
+    def shuffle_stacks_with_configuration(self, stacks: Dict[int, List[Card]], options: Dict) -> None:
+        for key, stack in stacks.items():
+            commodities = list(filter(lambda x: not x.is_calamity(), stack))
+            calamities = list(filter(lambda x: x.is_calamity(), stack))
+
+            # set aside as many cards as there are players
+            top_stack = random.sample(commodities, int(options.player))
+            random.shuffle(top_stack)
+            for card in top_stack:
+                commodities.remove(card)
+
+            # shuffle remaining cards and calamities
+            bottom_stack = commodities + calamities
+            random.shuffle(bottom_stack)
+
+            stacks[key] = top_stack + bottom_stack
+
+    def shuffle_stacks(self, stacks: Dict[int, List[Card]]) -> None:
         for stack in stacks.values():
             random.shuffle(stack)
-        return stacks
 
     def prepare_players_from_config(self, config: Dict) -> None:
         self.players: List[Player] = []
@@ -149,28 +193,62 @@ class Game(object):
         print(util.format_game_info(
             f'\nGAME_INFO: Round {self.round} starts: '))
         print_step()
+        self.phase_1_tax_collection()
+        self.phase_2_population_expansion()
+        self.phase_3_movement()
+        self.phase_4_conflict()
+        self.phase_5_city_construction()
         self.phase_6_trade_card_acquisition()
         self.phase_7_trade()
         self.phase_8_calamity_selection()
-        print_step()
         self.phase_9_calamity_resolution()
-        print_step()
+        self.phase_10_special_abilities()
+        self.phase_11_remove_surplus_populations()
         self.phase_12_civilization_advances_acquisition()
-        self.phase_13_reshuffling_trade_cards()
+        self.phase_13_ast_alteration()
         self.next_round()
         print_step()
         self.save_game()
 
+    def phase_1_tax_collection(self) -> None:
+        print(util.format_game_info(f'GAME_INFO: tax collection'))
+        input(util.format_action(f'Please collect the taxes'))
+        input(util.format_action(f'Are there any tax revolts?'))
+
+    def phase_2_population_expansion(self) -> None:
+        print(util.format_game_info(f'GAME_INFO: population expansion'))
+        input(util.format_action(f'Please expand the populations'))
+        input(util.format_action(f'Please do the census'))
+
+    def phase_3_movement(self) -> None:
+        print(util.format_game_info(f'GAME_INFO: movement'))
+        input(util.format_action(f'Please move in census order'))
+
+    def phase_4_conflict(self) -> None:
+        print(util.format_game_info(f'GAME_INFO: conflict'))
+        input(util.format_action(f'Resolution of token conflicts'))
+
+        print(util.format_info(f'Resolution of city attacks'))
+        while input(util.format_action(f'Was a city destroyed?')) == 'y':
+            attacker_name, defender_name = input(util.format_action(
+                f'Please name attacker and defender separated by a comma:\n')).split(',')
+
+            for player in self.players:
+                if player.name == attacker_name:
+                    attacker = player
+                if player.name == defender_name:
+                    defender = player
+            attacker.draw_card(defender)
+
+    def phase_5_city_construction(self) -> None:
+        print(util.format_game_info(f'GAME_INFO: city construction'))
+        input(util.format_action(f'Construct cities'))
+        input(util.format_action(f'Surplus population removal'))
+
     def phase_6_trade_card_acquisition(self) -> None:
-        cities = {
-            1: 0,
-            2: 1,
-            3: 6,
-            4: 8,
-
-        }
-
-        self.enter_cities(cities.get(self.round, None))
+        print(util.format_game_info(f'GAME_INFO: Trade card acquisition'))
+        print(util.format_info(f'Please enter number of cities for each nation'))
+        self.enter_cities()
         for player in sorted(self.players, key=lambda x: x.order_cities()):
             for city in range(player.cities):
                 city = city + 1
@@ -207,6 +285,14 @@ class Game(object):
                 self.dispatch_calamity_resolution[calamity.name](player)
             self.discard_pile.append(calamity)
 
+    def phase_10_special_abilities(self) -> None:
+        print(util.format_game_info(f'GAME_INFO: special abilities'))
+        input(util.format_action(f'Resolve special abilities'))
+
+    def phase_11_remove_surplus_populations(self) -> None:
+        print(util.format_game_info(f'GAME_INFO: remove surplus populations'))
+        input(util.format_action(f'Remove surplus populations'))
+
     def phase_12_civilization_advances_acquisition(self) -> None:
         print(util.format_game_info(
             f'GAME_INFO: resolving civilization_advances_acquisition'))
@@ -233,8 +319,11 @@ class Game(object):
                 f'{self.trailing_str}You handed in {len(cards)} with a value of {evaluate(cards)}'))
             self.discard_pile += cards
 
-    def phase_13_reshuffling_trade_cards(self) -> None:
-        print(util.format_game_info(f'GAME_INFO: reshuffling trade cards'))
+    def phase_13_ast_alteration(self) -> None:
+        print(util.format_game_info(f'GAME_INFO: ast_alteration'))
+        input(util.format_action(f'Move succession markers'))
+        input(util.format_action(f'Check for game end'))
+        print(util.format_info(f'Reshuffling trade cards'))
         stacks = {}
         for card in self.discard_pile:
             self.discard_pile.remove(card)

@@ -54,8 +54,8 @@ def main():
             print(f'Please provide a correct path to a save file.\nClosing.')
     else:
         with open('config.conf') as config:
-            config = json.load(config)[options.player][options.map]
-        game = components.game.Game(config)
+            config = json.load(config)
+        game = components.game.Game(config, options)
     
     while True:
         game.game_loop()

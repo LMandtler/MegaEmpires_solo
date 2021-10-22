@@ -7,5 +7,10 @@ venv/
 # Python Cache
 *.pyc
 
+# Build Folders and files
+build/
+dist/
+*.spec
+
 # save folder
 temp/
