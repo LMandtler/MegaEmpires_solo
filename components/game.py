@@ -100,8 +100,8 @@ class Game(object):
             self.players.append(Player(item['name'], item['ast_ranking'], []))
 
     def add_cards_to_stacks(self, stacks: Dict[int, List[Card]]) -> None:
-        for stack in stacks.items():
-            self.stacks[stack[0]].extend(stack[1])
+        for key, stack in stacks.items():
+            self.stacks[key].extend(stack)
 
     def enter_cities(self, cities: int = None) -> None:
         for player in self.players:
@@ -189,6 +189,16 @@ class Game(object):
 
         self.discard_pile += cards
 
+    def draw_card_from_stack(self, value: int) -> Card:
+        return self.stacks[value].pop(
+            0) if self.stacks[value] else self.water
+
+    def ask_player_to_purchase_card(self, player: Player) -> int:
+        options = [key for key, stack in self.stacks.items() if len(stack) > 0]
+        value = input(util.format_action(
+            f'{player.name}: Please type value of card that you want to purchase.\nThese are valid options: {options}'))
+        return int(value) if value != '' else None
+
     def game_loop(self) -> None:
         print(util.format_game_info(
             f'\nGAME_INFO: Round {self.round} starts: '))
@@ -249,13 +259,19 @@ class Game(object):
         print(util.format_game_info(f'GAME_INFO: Trade card acquisition'))
         print(util.format_info(f'Please enter number of cities for each nation'))
         self.enter_cities()
+        # drawing regular trade cards
         for player in sorted(self.players, key=lambda x: x.order_cities()):
             for city in range(player.cities):
                 city = city + 1
 
-                card = self.stacks[city].pop(
-                    0) if self.stacks[city] else self.water
-                player.handcards.append(card)
+                player.handcards.append(self.draw_card_from_stack(city))
+
+        # purchasing additional trade cards
+        for player in sorted(self.players, key=lambda x: x.order_cities()):
+            value = self.ask_player_to_purchase_card(player)
+            while type(value) == int:
+                player.handcards.append(self.draw_card_from_stack(value))
+                value = self.ask_player_to_purchase_card(player)
 
     def phase_7_trade(self, trades: int = 1000) -> None:
         print(util.format_game_info(f'GAME_INFO: resolving trades'))
