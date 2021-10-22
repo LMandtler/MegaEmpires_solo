@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import List, Tuple, Dict, Set
 from game.card import Card
-
+import game.util as util
 
 class Player:
     def __init__(self, name: str, ast_ranking: int, handcards: List[Card]) -> None:
@@ -41,7 +41,6 @@ class Player:
         self.offer = list(filter(lambda x: x.offerable, self.handcards))
 
         self.offer.sort(key=lambda x: x.value, reverse=True)
-        # print(f'PRIORITY: {self.name}: {self.priority}')
 
     def evaluate_offer(self, other: Player) -> Tuple[Player, List[Card], List[Card], int]:
         if len(self.handcards) < 3 or len(other.handcards) < 3:
@@ -136,8 +135,6 @@ class Player:
         if None in gain or None in give:
             self.cleanup_trade(give)
             other.cleanup_trade(gain)
-            print(f'Trade not possible: ', self, other,
-                  gain, give)
             return False
         # diff_self = self.diff_handcard_value(gain)
         # diff_other = other.diff_handcard_value(give)
@@ -199,8 +196,8 @@ class Player:
 
     def discard_cards(self, cards: List[Card], trailing_str: str = '') -> None:
         self.print_handcards(trailing_str)
-        discards = input(
-            f'Please name cards you want to discard in comma-separated fashion. trailing - for whole set:\n').split(',')
+        discards = input(util.format_action(
+            f'Please name cards you want to discard in comma-separated fashion. trailing - for whole set:\n')).split(',')
         for discard in discards:
             if discard == '':
                 continue
@@ -242,7 +239,7 @@ class Player:
         for card in sorted_handcards:
             count = self.handcards.count(card)
             str += f'{trailing_str}{"*" if count == card.max_count else " "}{card.name:<10}({card.value}): {count}/{card.max_count} cards with a set value of {calc_set_value(card, self.handcards):>3}\n'
-        print(str)
+        print(util.format_info(str))
 
 
 def evaluate(cards: List[Card]) -> int:
