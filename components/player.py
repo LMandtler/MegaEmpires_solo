@@ -216,10 +216,11 @@ class Player(object):
                         cards.append(card)
                         break
 
-    def draw_card(self, other:Player) -> None:
+    def draw_card(self, other:Player, trailing_str:str='') -> None:
         card = random.choice(other.handcards)
         other.handcards.remove(card)
         self.handcards.append(card)
+        print(util.format_info(f'{self.name} drew {card.name} from {other.name}'))
 
     def order_cities(self) -> Tuple[int, int]:
         return (self.cities, self.ast_ranking)

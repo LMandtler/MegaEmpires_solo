@@ -199,6 +199,21 @@ class Game(object):
             f'{player.name}: Please type value of card that you want to purchase.\nThese are valid options: {options}'))
         return int(value) if value != '' else None
 
+    def city_destroyal(self) -> Tuple[Player, Player]:
+        text = input(util.format_action(
+            f'Please name attacker and defender separated by a comma:\n'))
+        if text == '':
+            return None, None
+        
+        attacker_name, defender_name = text.split(',')
+
+        for player in self.players:
+            if player.name == attacker_name:
+                attacker = player
+            if player.name == defender_name:
+                defender = player
+        return attacker, defender
+
     def game_loop(self) -> None:
         print(util.format_game_info(
             f'\nGAME_INFO: Round {self.round} starts: '))
@@ -239,16 +254,10 @@ class Game(object):
         input(util.format_action(f'Resolution of token conflicts'))
 
         print(util.format_info(f'Resolution of city attacks'))
-        while input(util.format_action(f'Was a city destroyed?')) == 'y':
-            attacker_name, defender_name = input(util.format_action(
-                f'Please name attacker and defender separated by a comma:\n')).split(',')
-
-            for player in self.players:
-                if player.name == attacker_name:
-                    attacker = player
-                if player.name == defender_name:
-                    defender = player
-            attacker.draw_card(defender)
+        attacker, defender = self.city_destroyal()
+        while attacker is not None and defender is not None:
+            attacker.draw_card(defender, self.trailing_str)
+            attacker, defender = self.city_destroyal()
 
     def phase_5_city_construction(self) -> None:
         print(util.format_game_info(f'GAME_INFO: city construction'))
@@ -258,7 +267,7 @@ class Game(object):
     def phase_6_trade_card_acquisition(self) -> None:
         print(util.format_game_info(f'GAME_INFO: Trade card acquisition'))
         print(util.format_info(f'Please enter number of cities for each nation'))
-        self.enter_cities()
+        self.enter_cities(8)
         # drawing regular trade cards
         for player in sorted(self.players, key=lambda x: x.order_cities()):
             for city in range(player.cities):
