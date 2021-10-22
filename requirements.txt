@@ -1,0 +1,8 @@
+altgraph==0.17.2
+autopep8==1.5.7
+colorama==0.4.4
+jsonpickle==2.0.0
+pycodestyle==2.8.0
+pyinstaller==4.5.1
+pyinstaller-hooks-contrib==2021.3
+toml==0.10.2
