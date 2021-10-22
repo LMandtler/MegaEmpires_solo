@@ -267,7 +267,7 @@ class Game(object):
     def phase_6_trade_card_acquisition(self) -> None:
         print(util.format_game_info(f'GAME_INFO: Trade card acquisition'))
         print(util.format_info(f'Please enter number of cities for each nation'))
-        self.enter_cities(8)
+        self.enter_cities()
         # drawing regular trade cards
         for player in sorted(self.players, key=lambda x: x.order_cities()):
             for city in range(player.cities):
