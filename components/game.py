@@ -1,15 +1,16 @@
 from typing import List, Dict, Tuple
-from game.card import Card
-from game.player import Player, evaluate
-import game.util as util
+from components.card import Card
+from components.player import Player, evaluate
+import components.util as util
 import random
-
+import json
+import jsonpickle
+from pathlib import Path
 
 def print_step() -> None:
     print('____________________________________________________________')
 
-
-class Game():
+class Game(object):
     def __init__(self, config: Dict) -> None:
         self.stacks = {1: [], 2: [], 3: [], 4: [],
                        5: [], 6: [], 7: [], 8: [], 9: []}
@@ -158,6 +159,7 @@ class Game():
         self.phase_13_reshuffling_trade_cards()
         self.next_round()
         print_step()
+        self.save_game()
 
     def phase_6_trade_card_acquisition(self) -> None:
         cities = {
@@ -248,6 +250,13 @@ class Game():
 
     def next_round(self) -> None:
         self.round = self.round + 1
+
+    def save_game(self) -> None:
+        jsonStr = json.dumps(jsonpickle.encode(self, keys=True))
+        file = Path(f'temp/autosave_round_{self.round}.json')
+        file.parent.mkdir(parents=True, exist_ok=True)
+        file.touch(exist_ok=True)
+        file.write_text(jsonStr)
 
     def __repr__(self) -> str:
         return self.__str__()

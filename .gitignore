@@ -6,3 +6,6 @@ venv/
 
 # Python Cache
 *.pyc
+
+# save folder
+temp/

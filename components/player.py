@@ -1,9 +1,9 @@
 from __future__ import annotations
 from typing import List, Tuple, Dict, Set
-from game.card import Card
-import game.util as util
+from components.card import Card
+import components.util as util
 
-class Player:
+class Player(object):
     def __init__(self, name: str, ast_ranking: int, handcards: List[Card]) -> None:
         self.name = name
         self.ast_ranking = ast_ranking
