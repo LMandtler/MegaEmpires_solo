@@ -57,6 +57,8 @@ class Game(object):
         self.calamities: Dict[Card, Player] = {}
         self.trailing_str = '  '
 
+        self.resolve_provincial_empire = False
+
         self.dispatch_calamity_resolution = {
             "Banditry": self.resolve_banditry,
             "Corruption": self.resolve_corruption,
@@ -199,7 +201,7 @@ class Game(object):
             util.format_action(f': Please type value of card that you want to purchase.\nThese are valid options: {options}'))
         return int(value) if value != '' else None
 
-    def city_destroyal(self) -> Tuple[Player, Player]:
+    def get_attacker_defender(self) -> Tuple[Player, Player]:
         text = input(util.format_action(
             f'Please name attacker and defender separated by a comma:\n'))
         if text == '':
@@ -254,10 +256,10 @@ class Game(object):
         input(util.format_action(f'Resolution of token conflicts'))
 
         print(util.format_info(f'Resolution of city attacks'))
-        attacker, defender = self.city_destroyal()
+        attacker, defender = self.get_attacker_defender()
         while attacker is not None and defender is not None:
             attacker.draw_card(defender, self.trailing_str)
-            attacker, defender = self.city_destroyal()
+            attacker, defender = self.get_attacker_defender()
 
     def phase_5_city_construction(self) -> None:
         print(util.format_game_info(f'GAME_INFO: city construction'))
@@ -304,15 +306,26 @@ class Game(object):
         print(util.format_game_info(f'GAME_INFO: resolving calamity resolution'))
         for calamity in sorted(self.calamities, key=lambda x: x.order_calamity(), reverse=True):
             player = self.calamities.pop(calamity)
-            input(util.format_action(
-                f'{self.trailing_str}{player.name} resolve {calamity.name}. Last Owner: {calamity.last_owner}'))
+            text = f'{self.trailing_str}{player.name} resolve {calamity.name}.'
+            text = f'{text} Last Owner: {calamity.last_owner}' if calamity.last_owner else text
+            input(util.format_action(text))
             if calamity.name in self.dispatch_calamity_resolution:
                 self.dispatch_calamity_resolution[calamity.name](player)
             self.discard_pile.append(calamity)
 
     def phase_10_special_abilities(self) -> None:
         print(util.format_game_info(f'GAME_INFO: special abilities'))
-        input(util.format_action(f'Resolve special abilities'))
+        if not self.resolve_provincial_empire:
+            self.resolve_provincial_empire = input(util.format_action(f'Does Provincial Empire need to be resolved?[y]')) == 'y'
+        if self.resolve_provincial_empire:
+            print(util.format_info(f'Please name attacker and defender for provincial empire.'))
+            attacker, defender = self.get_attacker_defender()
+            while attacker is not None and defender is not None:
+                attacker.draw_card(defender, self.trailing_str)
+                attacker, defender = self.get_attacker_defender()
+            
+        input(util.format_action(f'Resolve other special abilities'))
+
 
     def phase_11_remove_surplus_populations(self) -> None:
         print(util.format_game_info(f'GAME_INFO: remove surplus populations'))
