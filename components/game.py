@@ -58,6 +58,7 @@ class Game(object):
         self.trailing_str = '  '
 
         self.resolve_provincial_empire = False
+        self.resolve_trade_routes = False
 
         self.dispatch_calamity_resolution = {
             "Banditry": self.resolve_banditry,
@@ -215,6 +216,16 @@ class Game(object):
             if player.name == defender_name:
                 defender = player
         return attacker, defender
+    
+    def name_a_player(self) -> Player:
+        text = input(util.format_action(f'Please name a player:\n'))
+        if text == '':
+            return None
+        
+        for player in self.players:
+            if player.name == text:
+                return player
+        
 
     def game_loop(self) -> None:
         print(util.format_game_info(
@@ -323,7 +334,18 @@ class Game(object):
             while attacker is not None and defender is not None:
                 attacker.draw_card(defender, self.trailing_str)
                 attacker, defender = self.get_attacker_defender()
-            
+        
+        if not self.resolve_trade_routes:
+            self.resolve_trade_routes = input(util.format_action(f'Does Trade Routes need to be resolved?[y]')) == 'y'
+        if self.resolve_trade_routes:
+            print(util.format_info(f'Please name a player to use Trade Routes.'))
+            player = self.name_a_player()
+            while player is not None:
+                cards = []
+                player.discard_cards(cards, self.trailing_str*2)
+                face_value = sum([card.value for card in cards])
+                print(util.format_info(f'You discarded cards with a face value of {face_value}. Please take {2*face_value} treasure tokens.'))
+                player = self.name_a_player()
         input(util.format_action(f'Resolve other special abilities'))
 
 
