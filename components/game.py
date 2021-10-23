@@ -305,7 +305,7 @@ class Game(object):
         for calamity in sorted(self.calamities, key=lambda x: x.order_calamity(), reverse=True):
             player = self.calamities.pop(calamity)
             input(util.format_action(
-                f'{self.trailing_str}{player.name} resolve {calamity.name}'))
+                f'{self.trailing_str}{player.name} resolve {calamity.name}. Last Owner: {calamity.last_owner}'))
             if calamity.name in self.dispatch_calamity_resolution:
                 self.dispatch_calamity_resolution[calamity.name](player)
             self.discard_pile.append(calamity)
@@ -352,6 +352,7 @@ class Game(object):
         stacks = {}
         for card in self.discard_pile:
             self.discard_pile.remove(card)
+            card.last_owner = None
             if abs(card.value) in stacks:
                 stacks[abs(card.value)].append(card)
             else:

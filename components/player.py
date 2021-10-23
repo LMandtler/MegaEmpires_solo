@@ -141,6 +141,9 @@ class Player(object):
         # diff_other = other.diff_handcard_value(give)
         self.handcards.extend(gain)
         other.handcards.extend(give)
+
+        self.track_last_owner(give)
+        other.track_last_owner(gain)
         # print(self, other, gain, give, evaluate(gain), evaluate(give), diff_self, diff_other)
         self.calc_offer()
         other.calc_offer()
@@ -148,6 +151,10 @@ class Player(object):
 
     def cleanup_trade(self, cards: List[Card]) -> None:
         self.handcards += filter(lambda x: x is not None, cards)
+
+    def track_last_owner(self, cards: List[Card]) -> None:
+        for card in filter(lambda x: x.is_calamity(), cards):
+            card.last_owner = self
 
     def get_lowest_value_card(self, offered_cards: List[Card], calamity: bool = True) -> Card:
         # order handcards by internal value in desc order

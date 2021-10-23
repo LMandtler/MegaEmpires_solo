@@ -1,6 +1,5 @@
 from typing import Tuple, Dict
 
-
 class Card(object):
     def __init__(self, name: str, value: int, max_count: int, calamity: str = None, tradeable: bool = True, offerable: bool = True) -> None:
         self.name = name
@@ -9,6 +8,7 @@ class Card(object):
         self.calamity = calamity
         self.tradeable = tradeable
         self.offerable = offerable
+        self.last_owner = None
 
     def is_calamity(self) -> bool:
         return self.calamity is not None
