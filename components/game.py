@@ -387,6 +387,8 @@ class Game(object):
         stacks = {}
         for card in self.discard_pile:
             self.discard_pile.remove(card)
+            if card == self.water:
+                continue
             card.last_owner = None
             if abs(card.value) in stacks:
                 stacks[abs(card.value)].append(card)
