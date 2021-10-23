@@ -195,8 +195,8 @@ class Game(object):
 
     def ask_player_to_purchase_card(self, player: Player) -> int:
         options = [key for key, stack in self.stacks.items() if len(stack) > 0]
-        value = input(util.format_action(
-            f'{player.name}: Please type value of card that you want to purchase.\nThese are valid options: {options}'))
+        value = input(util.format_info(f'{player.name}') +
+            util.format_action(f': Please type value of card that you want to purchase.\nThese are valid options: {options}'))
         return int(value) if value != '' else None
 
     def city_destroyal(self) -> Tuple[Player, Player]:
