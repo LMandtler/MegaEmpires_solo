@@ -1,7 +1,7 @@
 from typing import List, Dict, Tuple
 from components.card import Card
 from components.player import Player, evaluate
-import components.util as util
+import util.texts as util
 import random
 import json
 import jsonpickle

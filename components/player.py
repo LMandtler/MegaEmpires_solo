@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import List, Tuple, Dict, Set
 from components.card import Card
-import components.util as util
+import util.texts as util
 import random
 
 class Player(object):
