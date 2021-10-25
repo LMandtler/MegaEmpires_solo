@@ -267,6 +267,8 @@ class Game(object):
         print(util.format_game_info(f'GAME_INFO: city construction'))
         input(util.format_action(f'Construct cities'))
         input(util.format_action(f'Surplus population removal'))
+        input(util.format_action(f'Check city support'))
+
 
     def phase_6_trade_card_acquisition(self) -> None:
         print(util.format_game_info(f'GAME_INFO: Trade card acquisition'))
