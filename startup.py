@@ -13,7 +13,7 @@ def parse_args() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description='Automize trading in Mega Empires')
     parser.add_argument(
-        '-p', '--player', help='number of players', type=str, default='9')
+        '-p', '--playercount', help='number of players', type=int, default=5)
     parser.add_argument(
         '-m', '--map', help='east or west map', type=str, default='west')
     parser.add_argument(

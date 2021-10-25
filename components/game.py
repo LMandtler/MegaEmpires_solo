@@ -1,3 +1,4 @@
+from os import major
 from typing import List, Dict, Tuple
 from components.card import Card
 from components.player import Player, evaluate
@@ -17,41 +18,15 @@ class Game(object):
         self.stacks = {1: [], 2: [], 3: [], 4: [],
                        5: [], 6: [], 7: [], 8: [], 9: []}
 
-        config = config[options.player][options.map]
+        stacks = self.get_cards_from_config(config['cards'], options)
+        self.prepare_stacks(stacks, options)
+        self.add_cards_to_stacks(stacks)
 
-        if options.player == "5":
-            top_stacks = self.prepare_stacks_from_config(
-                config['top'], options)
-            bottom_stacks = self.prepare_stacks_from_config(
-                config['bottom'], options)
-
-            self.shuffle_stacks_with_configuration(top_stacks, options)
-            self.shuffle_stacks(bottom_stacks)
-
-            self.add_cards_to_stacks(top_stacks)
-            self.add_cards_to_stacks(bottom_stacks)
-
-        if options.player == "9":
-            top_stacks = self.prepare_stacks_from_config(
-                config['top'], options)
-            middle_stacks = self.prepare_stacks_from_config(
-                config['middle'], options)
-            bottom_stacks = self.prepare_stacks_from_config(
-                config['bottom'], options)
-
-            self.shuffle_stacks(top_stacks)
-            self.shuffle_stacks(middle_stacks)
-            self.shuffle_stacks(bottom_stacks)
-
-            self.add_cards_to_stacks(top_stacks)
-            self.add_cards_to_stacks(middle_stacks)
-            self.add_cards_to_stacks(bottom_stacks)
-
-        self.prepare_players_from_config(config['players'])
+        self.prepare_civilizations_from_config(config['civilizations'], options)
 
         self.round = 1
         self.hand_limit = 8
-        self.water = Card('water', 0, 0)
+        self.water = Card('water', 0, 0, False)
 
         self.discard_pile: List[Card] = []
         self.calamities: Dict[Card, Player] = {}
@@ -65,46 +40,62 @@ class Game(object):
             "Corruption": self.resolve_corruption,
         }
 
-    def prepare_stacks_from_config(self, config: Dict, options: Dict) -> Dict[int, List[Card]]:
+    def get_cards_from_config(self, cards: Dict, options: Dict) -> Dict[int, List[Card]]:
         stacks = {}
-        for item in config:
-            cards = [Card(item['name'], item['value'], item['count'], item['calamity'],
-                          item['tradeable'], item['offerable'])] * item['count']
-            if abs(item['value']) in stacks:
-                stacks[abs(item['value'])].extend(cards)
-            else:
-                stacks[abs(item['value'])] = cards
+        for item in cards:
+            if options.playercount in item['players']:
+                card = [Card(item['name'], item['value'], item['count'], item['additional_set'], item['calamity'],
+                            item['tradeable'], item['offerable'])] * item['count']
+                if abs(item['value']) in stacks:
+                    stacks[abs(item['value'])].extend(card)
+                else:
+                    stacks[abs(item['value'])] = card
         return stacks
 
-    def shuffle_stacks_with_configuration(self, stacks: Dict[int, List[Card]], options: Dict) -> None:
-        for key, stack in stacks.items():
-            commodities = list(filter(lambda x: not x.is_calamity(), stack))
-            calamities = list(filter(lambda x: x.is_calamity(), stack))
+    def prepare_stacks(self, stacks: Dict[int, List[Card]], options: Dict) -> None:
+        for key,stack in stacks.items():
+            basic_commodities = list(filter(lambda x: x.is_commodity() and not x.is_additional_set(), stack))
+            additional_commodities = list(filter(lambda x: x.is_commodity() and x.is_additional_set(), stack))
+            minor_calamities = list(filter(lambda x: x.is_minor_calamity(), stack))
+            major_calamities = list(filter(lambda x: x.is_major_calamity() and x.is_tradeable(), stack))
+            non_tradeable_calamities = list(filter(lambda x: x.is_major_calamity and not x.is_tradeable(), stack))
 
-            # set aside as many cards as there are players
-            top_stack = random.sample(commodities, int(options.player))
-            random.shuffle(top_stack)
-            for card in top_stack:
-                commodities.remove(card)
+            if options.playercount in range(5,9):
+                    
+                # set aside as many cards as there are players from basic commodities
+                top_stack = random.sample(basic_commodities, options.playercount)
+                for card in top_stack:
+                    basic_commodities.remove(card)
 
-            # shuffle remaining cards and calamities
-            bottom_stack = commodities + calamities
-            random.shuffle(bottom_stack)
+                # shuffle remaining cards and calamities
+                middle_stack = basic_commodities + major_calamities
+                random.shuffle(middle_stack)
 
-            stacks[key] = top_stack + bottom_stack
+            elif options.playercount in range(9,10):
+                top_stack = basic_commodities + minor_calamities
+                random.shuffle(top_stack)
+
+                middle_stack = additional_commodities + major_calamities
+                random.shuffle(middle_stack)
+
+            stacks[key] = top_stack + middle_stack + non_tradeable_calamities
 
     def shuffle_stacks(self, stacks: Dict[int, List[Card]]) -> None:
         for stack in stacks.values():
             random.shuffle(stack)
 
-    def prepare_players_from_config(self, config: Dict) -> None:
+    def prepare_civilizations_from_config(self, civilizations: Dict, options: Dict) -> None:
         self.players: List[Player] = []
-        for item in config:
-            self.players.append(Player(item['name'], item['ast_ranking'], []))
+        for item in civilizations:
+            if options.playercount in item['players']:
+                self.players.append(Player(item['name'], item['ast_ranking'], []))
 
     def add_cards_to_stacks(self, stacks: Dict[int, List[Card]]) -> None:
-        for key, stack in stacks.items():
-            self.stacks[key].extend(stack)
+        for key, cards in stacks.items():
+            self.add_cards_to_stacks_by_key(cards, key)
+
+    def add_cards_to_stacks_by_key(self, cards: List[Card], key: int) -> None:
+        self.stacks[key].extend(cards)
 
     def enter_cities(self, cities: int = None) -> None:
         for player in self.players:
