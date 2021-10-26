@@ -23,10 +23,14 @@ class Player(object):
         return new_value - current_value
 
     def calc_offer(self) -> None:
-        values = calc_values(self.handcards)
+        # remove full sets from handcards first, so that the player will definitely hold that set.
+        # determine full sets first:
+        cards = without_full_sets(self.handcards)
+
+        values = calc_values(cards)
         sorted_handcards = sorted(
             values.items(), key=lambda x: x[1][1], reverse=True)
-        value_handcards = evaluate(self.handcards)
+        value_cards = evaluate(cards)
 
         self.priority: Set[Card] = set()
         self.offer: List[Card] = []
@@ -36,15 +40,16 @@ class Player(object):
             self.priority.add(item[0])
             rolling_sum += item[1][0]
 
-            if rolling_sum >= value_handcards * self.priority_threshold:
+            if rolling_sum >= value_cards * self.priority_threshold:
                 break
 
-        self.offer = list(filter(lambda x: x.offerable, self.handcards))
+        self.offer = list(filter(lambda x: x.offerable, cards))
 
         self.offer.sort(key=lambda x: x.value, reverse=True)
 
+
     def evaluate_offer(self, other: Player) -> Tuple[Player, List[Card], List[Card], int]:
-        if len(self.handcards) < 3 or len(other.handcards) < 3:
+        if len(without_full_sets(self.handcards)) < 3 or len(without_full_sets(other.handcards)) < 3:
             return None
 
         gain_options = sorted([
@@ -64,8 +69,6 @@ class Player(object):
         elif gain_options:
             return (other, gain_options, None, gain_value*0.5)
         else:
-            # TODO: Search for suboptimal trading partner
-            #    (meaning I can fulfill my own priority without fulfilling his but giving him Value)
             return None
 
     def trade(self, trade_option: Tuple[Player, List[Card], List[Card], int]) -> bool:
@@ -158,8 +161,9 @@ class Player(object):
 
     def get_lowest_value_card(self, offered_cards: List[Card], calamity: bool = True) -> Card:
         # order handcards by internal value in desc order
+        cards = without_full_sets(self.handcards)
         values = calc_values(
-            list(filter(lambda x: x not in offered_cards and x not in self.priority, self.handcards)))
+            list(filter(lambda x: x not in offered_cards and x not in self.priority, cards)))
         card = next(
             filter(
                 lambda x: x.tradeable if calamity else x.value >= 0,
@@ -174,8 +178,9 @@ class Player(object):
         return card
 
     def get_card_by_value(self, value: int, offered_cards: List[Card]) -> Card:
+        cards = without_full_sets(self.handcards)
         values = calc_values(
-            list(filter(lambda x: x not in offered_cards and x not in self.priority, self.handcards)))
+            list(filter(lambda x: x not in offered_cards and x not in self.priority, cards)))
         return_card = None
         for card in filter(lambda x: x.value >= 0, [item[0] for item in sorted(
                 values.items(), key=lambda x: x[1][1], reverse=False)]):
@@ -296,3 +301,8 @@ def calc_values(cards: List[Card]) -> Dict[Card, Tuple[int, float, int]]:
 
         values[card] = (set_value, card_value, card_count)
     return values
+
+def without_full_sets(cards: List[Card]) -> List[Card]:
+    full_sets = [card for card in set(cards) if cards.count(card) == card.max_count]
+    filtered_cards = list(filter(lambda x: x not in full_sets, cards))
+    return filtered_cards
