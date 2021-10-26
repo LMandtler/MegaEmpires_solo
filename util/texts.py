@@ -8,3 +8,6 @@ def format_info(text: str) -> str:
 
 def format_action(text: str) -> str:
     return f'{Fore.GREEN}{text}{Style.RESET_ALL}'
+
+def format_waiting(text: str) -> str:
+    return f'{Fore.LIGHTRED_EX}{text}{Style.RESET_ALL}'

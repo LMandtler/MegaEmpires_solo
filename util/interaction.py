@@ -9,7 +9,7 @@ def get_input(request: str) -> str:
 
 
 def wait_for_action(text: str) -> None:
-    input(util.format_action(text))
+    input(util.format_waiting(text))
 
 
 def get_digit(request: str) -> int:

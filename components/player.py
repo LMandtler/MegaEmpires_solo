@@ -205,11 +205,21 @@ class Player(object):
     def discard_cards(self, cards: List[Card], trailing_str: str = '') -> None:
         self.print_handcards(trailing_str)
         discards = input(util.format_action(
-            f'Please name cards you want to discard in comma-separated fashion. trailing - for whole set:\n')).split(',')
+            f'Please name cards you want to discard in comma-separated fashion.\n' \
+            f'preceding * to discard whole set:\n' \
+            f'preceding - to add cards back to handcards\n'
+            )).split(',')
         for discard in discards:
             if discard == '':
                 continue
             elif discard[0] == '-':
+                # remove the card from assigned discards and add back to handcards
+                extracted_cards = [
+                    card for card in cards if card.name == discard[1:]]
+                self.handcards.extend(extracted_cards)
+                while extracted_cards:
+                    cards.remove(extracted_cards.pop(0))
+            elif discard[0] == '*':
                 # get the whole set within the handcards
                 extracted_cards = [
                     card for card in self.handcards if card.name == discard[1:]]

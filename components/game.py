@@ -109,7 +109,7 @@ class Game(object):
     def enter_cities(self, cities: int = None) -> None:
         for player in self.players:
             player.cities = Requests.get_digit(
-                f'{player.name}') if cities is None else cities
+                f'{player.name}:') if cities is None else cities
 
     def prepare_trading_queue(self) -> None:
         self.trading_queue = sorted(
@@ -198,9 +198,9 @@ class Game(object):
 
     def ask_player_to_purchase_card(self, player: Player) -> int:
         options = [key for key, stack in self.stacks.items() if len(stack) > 0]
-        print(util.format_info(f'{player.name}'))
+        print(util.format_info(f'{player.name}:'))
         value = Requests.get_digit(
-            f': Please type value of card that you want to purchase.\nThese are valid options: {options}')
+            f'{self.trailing_str}Please type value of card that you want to purchase.\nValid options: {options}')
         return value if value != 0 else None
 
     def game_loop(self) -> None:
@@ -351,16 +351,21 @@ class Game(object):
 
             player.discard_cards(cards, self.trailing_str*2)
 
-            while len(player.handcards) > self.hand_limit:
-                print(util.format_info(
-                    f'{self.trailing_str}Please discard at least {len(player.handcards) - self.hand_limit} more cards.'))
+
+
+            while len(player.handcards) > self.hand_limit or Requests.get_confirmation(
+                    f'Do you want to discard more cards? [{"y"}]:'
+                    f'{self.trailing_str}You already handed in {len(cards)} with a value of {evaluate(cards)}\n' \
+                    f'{self.trailing_str*2}{cards}\n' \
+                    ):
+                if len(player.handcards) > self.hand_limit:
+                    print(util.format_info(
+                        f'{self.trailing_str}Please discard at least {len(player.handcards) - self.hand_limit} more cards.\n' \
+                        f'{self.trailing_str}You already handed in {len(cards)} with a value of {evaluate(cards)}\n' \
+                        f'{self.trailing_str*2}{cards}\n' \
+                        ))
                 player.discard_cards(cards)
 
-            while Requests.get_confirmation(f'Do you want to discard more cards? [{"y"}]:'):
-                player.discard_cards(cards)
-
-            Requests.wait_for_action(
-                f'{self.trailing_str}You handed in {len(cards)} with a value of {evaluate(cards)}')
             self.discard_pile += cards
 
     def phase_13_ast_alteration(self) -> None:
