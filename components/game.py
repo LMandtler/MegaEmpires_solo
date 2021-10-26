@@ -1,7 +1,8 @@
 from os import major
 from typing import List, Dict, Tuple
 from components.card import Card
-from components.player import Player, evaluate
+from components.handcards import Handcards
+from components.player import Player
 import util.texts as util
 import random
 import json
@@ -350,27 +351,27 @@ class Game(object):
         print(util.format_game_info(
             f'GAME_INFO: resolving civilization_advances_acquisition'))
         for player in self.players:
-            if len(player.handcards) == 0:
+            if player.handcards.count() == 0:
                 continue
             print_step()
             print(util.format_info(
-                f'\n{self.trailing_str}{player.name} has {len(player.handcards)} cards:'))
+                f'\n{self.trailing_str}{player.name} has {player.handcards.count()} cards:'))
 
-            cards = []
+            cards = Handcards()
 
             player.discard_cards(cards, self.trailing_str*2)
 
-            while len(player.handcards) > self.hand_limit:
+            while player.handcards.count() > self.hand_limit:
                 print(util.format_info(
-                    f'{self.trailing_str}Please discard at least {len(player.handcards) - self.hand_limit} more cards.'))
+                    f'{self.trailing_str}Please discard at least {player.handcards.count() - self.hand_limit} more cards.'))
                 player.discard_cards(cards)
 
             while input(util.format_action(f'Are you finished with discarding cards? [{"n"} to decline]:')) == 'n':
                 player.discard_cards(cards)
 
             input(util.format_action(
-                f'{self.trailing_str}You handed in {len(cards)} with a value of {evaluate(cards)}'))
-            self.discard_pile += cards
+                f'{self.trailing_str}You handed in {cards.count()} with a value of {cards.evaluate()}'))
+            self.discard_pile += cards.get_cards()
 
     def phase_13_ast_alteration(self) -> None:
         print(util.format_game_info(f'GAME_INFO: ast_alteration'))
