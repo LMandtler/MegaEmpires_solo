@@ -4,6 +4,7 @@ from components.card import Card
 import util.texts as util
 import random
 
+
 class Player(object):
     def __init__(self, name: str, ast_ranking: int, handcards: List[Card]) -> None:
         self.name = name
@@ -47,7 +48,6 @@ class Player(object):
 
         self.offer.sort(key=lambda x: x.value, reverse=True)
 
-
     def evaluate_offer(self, other: Player) -> Tuple[Player, List[Card], List[Card], int]:
         if len(without_full_sets(self.handcards)) < 3 or len(without_full_sets(other.handcards)) < 3:
             return None
@@ -61,7 +61,7 @@ class Player(object):
             if card in other.priority and card not in gain_options
         ], key=lambda x: other.order_cards_internal_value(x), reverse=True)
 
-        gain_value = sum([self.get_internal_value(card)
+        gain_value = sum([calc_card_value(card, self.handcards)
                          for card in gain_options])
 
         if gain_options and give_options:
@@ -196,11 +196,6 @@ class Player(object):
     def ascend(self) -> None:
         self.ast_position += 1
 
-    def get_internal_value(self, card: Card) -> int:
-        current_value = calc_card_value(card, self.handcards)
-        new_value = calc_card_value(card, self.handcards + [card])
-        return new_value - current_value
-
     def reveal_calamities(self) -> List[Card]:
         calamities = list(filter(lambda x: x.is_calamity(), self.handcards))
         for card in calamities:
@@ -210,10 +205,10 @@ class Player(object):
     def discard_cards(self, cards: List[Card], trailing_str: str = '') -> None:
         self.print_handcards(trailing_str)
         discards = input(util.format_action(
-            f'Please name cards you want to discard in comma-separated fashion.\n' \
-            f'preceding * to discard whole set:\n' \
+            f'Please name cards you want to discard in comma-separated fashion.\n'
+            f'preceding * to discard whole set:\n'
             f'preceding - to add cards back to handcards\n'
-            )).split(',')
+        )).split(',')
         for discard in discards:
             if discard == '':
                 continue
@@ -238,11 +233,12 @@ class Player(object):
                         cards.append(card)
                         break
 
-    def draw_card(self, other:Player, trailing_str:str='') -> None:
+    def draw_card(self, other: Player, trailing_str: str = '') -> None:
         card = random.choice(other.handcards)
         other.handcards.remove(card)
         self.handcards.append(card)
-        print(util.format_info(f'{self.name} drew {card.name} from {other.name}'))
+        print(util.format_info(
+            f'{self.name} drew {card.name} from {other.name}'))
 
     def order_cities(self) -> Tuple[int, int]:
         return (self.cities, self.ast_ranking)
@@ -251,7 +247,7 @@ class Player(object):
         return (self.ast_position, self.ast_ranking)
 
     def order_cards_internal_value(self, card: Card) -> Tuple[int, int, int, str]:
-        return (self.get_internal_value(card), calc_set_value(card, self.handcards), card.value, card.name)
+        return (calc_card_value(card, self.handcards), calc_set_value(card, self.handcards), card.value, card.name)
 
     def __repr__(self) -> str:
         return self.__str__()
@@ -283,8 +279,14 @@ def calc_card_value(card: Card, cards: List[Card]) -> float:
     count = cards.count(card)
     if count == 0:
         return 0
+    if count == card.max_count:
+        value = calc_set_value(card, cards)
+        return int(value / count)
+    # add additional card to set
+    add_cards = cards.copy() + [card]
     value = calc_set_value(card, cards)
-    return value / count
+    add_value = calc_set_value(card, add_cards)
+    return add_value - value
 
 
 def calc_set_value(card: Card, cards: List[Card]) -> int:
@@ -302,7 +304,9 @@ def calc_values(cards: List[Card]) -> Dict[Card, Tuple[int, float, int]]:
         values[card] = (set_value, card_value, card_count)
     return values
 
+
 def without_full_sets(cards: List[Card]) -> List[Card]:
-    full_sets = [card for card in set(cards) if cards.count(card) == card.max_count]
+    full_sets = [card for card in set(
+        cards) if cards.count(card) == card.max_count]
     filtered_cards = list(filter(lambda x: x not in full_sets, cards))
     return filtered_cards

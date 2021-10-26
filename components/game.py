@@ -351,19 +351,17 @@ class Game(object):
 
             player.discard_cards(cards, self.trailing_str*2)
 
-
-
             while len(player.handcards) > self.hand_limit or Requests.get_confirmation(
                     f'Do you want to discard more cards? [{"y"}]:'
-                    f'{self.trailing_str}You already handed in {len(cards)} with a value of {evaluate(cards)}\n' \
-                    f'{self.trailing_str*2}{cards}\n' \
-                    ):
+                    f'{self.trailing_str}You already handed in {len(cards)} with a value of {evaluate(cards)}\n'
+                    f'{self.trailing_str*2}{cards}\n'
+            ):
                 if len(player.handcards) > self.hand_limit:
                     print(util.format_info(
-                        f'{self.trailing_str}Please discard at least {len(player.handcards) - self.hand_limit} more cards.\n' \
-                        f'{self.trailing_str}You already handed in {len(cards)} with a value of {evaluate(cards)}\n' \
-                        f'{self.trailing_str*2}{cards}\n' \
-                        ))
+                        f'{self.trailing_str}Please discard at least {len(player.handcards) - self.hand_limit} more cards.\n'
+                        f'{self.trailing_str}You already handed in {len(cards)} with a value of {evaluate(cards)}\n'
+                        f'{self.trailing_str*2}{cards}\n'
+                    ))
                 player.discard_cards(cards)
 
             self.discard_pile += cards
@@ -374,8 +372,8 @@ class Game(object):
         Requests.wait_for_action(f'Check for game end')
         print(util.format_info(f'Reshuffling trade cards'))
         stacks = {}
-        for card in self.discard_pile:
-            self.discard_pile.remove(card)
+        while self.discard_pile:
+            card = self.discard_pile.pop()
             if card == self.water:
                 continue
             card.last_owner = None
