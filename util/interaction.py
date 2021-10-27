@@ -1,6 +1,6 @@
-import util.texts as util
-from collections.abc import Callable
 from typing import Tuple, List
+
+import util.texts as util
 from components.player import Player
 
 

@@ -1,4 +1,4 @@
-from typing import Tuple, Dict
+from typing import Tuple
 
 class Card(object):
     def __init__(self, name: str, value: int, max_count: int, additional_set: bool, calamity: str = None, tradeable: bool = True, offerable: bool = True) -> None:

@@ -1,8 +1,8 @@
 from __future__ import annotations
+import random
 from typing import List, Tuple, Dict, Set
 from components.card import Card
 import util.texts as util
-import random
 
 
 class Player(object):
@@ -14,6 +14,8 @@ class Player(object):
         self.cities: int = 0
         self.priority_threshold = None
         self.trades: Dict[int, int] = {}
+        self.priority: Set[Card] = set()
+        self.offer: List[Card] = []
 
     def diff_handcard_value(self, incoming: List[Card]) -> Tuple[int, int]:
         new_handcards = self.handcards + incoming
@@ -33,8 +35,8 @@ class Player(object):
             values.items(), key=lambda x: x[1][1], reverse=True)
         value_cards = evaluate(cards)
 
-        self.priority: Set[Card] = set()
-        self.offer: List[Card] = []
+        self.priority = set()
+        self.offer = []
 
         rolling_sum = 0
         for item in filter(lambda x: x[0].tradeable, sorted_handcards):
@@ -55,11 +57,11 @@ class Player(object):
         gain_options = sorted([
             card for card in other.offer
             if card in self.priority and card not in other.priority
-        ], key=lambda x: self.order_cards_internal_value(x), reverse=True)
+        ], key=self.order_cards_internal_value, reverse=True)
         give_options = sorted([
             card for card in self.offer
             if card in other.priority and card not in gain_options
-        ], key=lambda x: other.order_cards_internal_value(x), reverse=True)
+        ], key=other.order_cards_internal_value, reverse=True)
 
         gain_value = sum([calc_card_value(card, self.handcards)
                          for card in gain_options])
@@ -72,7 +74,7 @@ class Player(object):
             return None
 
     def trade(self, trade_option: Tuple[Player, List[Card], List[Card], int]) -> bool:
-        (other, gain_options, give_options, intern_value) = trade_option
+        (other, gain_options, give_options, _) = trade_option
         # gain and give needs to be filled to 2 cards. gain_value and give_value should be identical at that point
         # then 3 card is added by taking card with lowest value
 
@@ -83,7 +85,7 @@ class Player(object):
                 filter(
                     lambda x: x is not gain_options[0] and x.value > 0,
                     self.handcards
-                ), key=lambda x: other.order_cards_internal_value(x),
+                ), key=other.order_cards_internal_value,
                 reverse=True
             )
 
@@ -202,17 +204,17 @@ class Player(object):
             self.handcards.remove(card)
         return calamities
 
-    def discard_cards(self, cards: List[Card], trailing_str: str = '') -> None:
-        self.print_handcards(trailing_str)
+    def discard_cards(self, cards: List[Card], preceding_str: str = '') -> None:
+        self.print_handcards(preceding_str)
         discards = input(util.format_action(
-            f'Please name cards you want to discard in comma-separated fashion.\n'
-            f'preceding * to discard whole set:\n'
-            f'preceding - to add cards back to handcards\n'
+            'Please name cards you want to discard in comma-separated fashion.\n'
+            'preceding * to discard whole set:\n'
+            'preceding - to add cards back to handcards\n'
         )).split(',')
         for discard in discards:
             if discard == '':
                 continue
-            elif discard[0] == '-':
+            if discard[0] == '-':
                 # remove the card from assigned discards and add back to handcards
                 extracted_cards = [
                     card for card in cards if card.name == discard[1:]]
@@ -233,7 +235,7 @@ class Player(object):
                         cards.append(card)
                         break
 
-    def draw_card(self, other: Player, trailing_str: str = '') -> None:
+    def draw_card(self, other: Player) -> None:
         card = random.choice(other.handcards)
         other.handcards.remove(card)
         self.handcards.append(card)
@@ -255,16 +257,16 @@ class Player(object):
     def __str__(self) -> str:
         return f'{self.name}'
 
-    def print_handcards(self, trailing_str: str = '', calamities: bool = False) -> None:
-        str = ''
+    def print_handcards(self, preceding_str: str = '', calamities: bool = False) -> None:
+        text = ''
         sorted_handcards = sorted(
             list(set(self.handcards)), key=lambda x: (x.value, calc_set_value(x, self.handcards), x.name), reverse=True)
         if not calamities:
             sorted_handcards = filter(lambda x: x.value >= 0, sorted_handcards)
         for card in sorted_handcards:
             count = self.handcards.count(card)
-            str += f'{trailing_str}{"*" if count == card.max_count else " "}{card.name:<10}({card.value}): {count}/{card.max_count} cards with a set value of {calc_set_value(card, self.handcards):>3}\n'
-        print(util.format_info(str))
+            text += f'{preceding_str}{"*" if count == card.max_count else " "}{card.name:<10}({card.value}): {count}/{card.max_count} cards with a set value of {calc_set_value(card, self.handcards):>3}\n'
+        print(util.format_info(text))
 
 
 def evaluate(cards: List[Card]) -> int:

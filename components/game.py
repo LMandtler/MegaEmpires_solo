@@ -1,13 +1,14 @@
-from os import major
 from typing import List, Dict, Tuple
+import random
+import json
+from pathlib import Path
+
+import jsonpickle
+
 from components.card import Card
 from components.player import Player, evaluate
 import util.texts as util
 import util.interaction as Requests
-import random
-import json
-import jsonpickle
-from pathlib import Path
 
 
 def print_step() -> None:
@@ -36,6 +37,8 @@ class Game(object):
 
         self.resolve_provincial_empire = False
         self.resolve_trade_routes = False
+
+        self.trading_queue: List[Player] = []
 
         self.dispatch_calamity_resolution = {
             "Banditry": self.resolve_banditry,
@@ -126,7 +129,7 @@ class Game(object):
             offer = actor.evaluate_offer(other_player)
             if max_value is None and offer is not None:
                 max_value = offer
-            elif offer is not None and offer[3] > max_value[3]:
+            elif offer is not None and offer[3] > max_value[3]: # pylint: disable=E1136  # pylint/issues/3139
                 max_value = offer
 
         self.trading_queue.append(actor)
@@ -162,10 +165,10 @@ class Game(object):
 
     def resolve_banditry(self, player: Player) -> None:
         print(util.format_info(
-            f'You have to discard 2 cards. You can prevent each card by paying 4 treasury token each.'))
+            'You have to discard 2 cards. You can prevent each card by paying 4 treasury token each.'))
         player.print_handcards(self.trailing_str)
         count = 2 - \
-            Requests.get_digit(f'How many cards do you want to prevent?\n')
+            Requests.get_digit('How many cards do you want to prevent?\n')
         cards = []
 
         while len(cards) < count:
@@ -177,7 +180,7 @@ class Game(object):
 
     def resolve_corruption(self, player: Player) -> None:
         face_value = Requests.get_digit(
-            f'Please type in actual face value to discard. Base:10, Law:-5, Coinage:+5, Wonder of the World:+5\n')
+            'Please type in actual face value to discard. Base:10, Law:-5, Coinage:+5, Wonder of the World:+5\n')
         print(util.format_info(
             f'You have to discard cards with a face value of {face_value}'))
         cards = []
@@ -185,7 +188,7 @@ class Game(object):
         discard_value = 0
 
         while discard_value < face_value:
-            print(util.info(
+            print(util.format_info(
                 f'You have to discard {face_value - discard_value} additional face value'))
             player.discard_cards(cards, self.trailing_str)
             discard_value = sum([card.value for card in cards])
@@ -225,41 +228,41 @@ class Game(object):
         self.save_game()
 
     def phase_1_tax_collection(self) -> None:
-        print(util.format_game_info(f'GAME_INFO: tax collection'))
-        Requests.wait_for_action(f'Please collect the taxes')
-        Requests.wait_for_action(f'Are there any tax revolts?')
+        print(util.format_game_info('GAME_INFO: tax collection'))
+        Requests.wait_for_action('Please collect the taxes')
+        Requests.wait_for_action('Are there any tax revolts?')
 
     def phase_2_population_expansion(self) -> None:
-        print(util.format_game_info(f'GAME_INFO: population expansion'))
-        Requests.wait_for_action(f'Please expand the populations')
-        Requests.wait_for_action(f'Please do the census')
+        print(util.format_game_info('GAME_INFO: population expansion'))
+        Requests.wait_for_action('Please expand the populations')
+        Requests.wait_for_action('Please do the census')
 
     def phase_3_movement(self) -> None:
-        print(util.format_game_info(f'GAME_INFO: movement'))
-        Requests.wait_for_action(f'Please move in census order')
+        print(util.format_game_info('GAME_INFO: movement'))
+        Requests.wait_for_action('Please move in census order')
 
     def phase_4_conflict(self) -> None:
-        print(util.format_game_info(f'GAME_INFO: conflict'))
-        Requests.wait_for_action(f'Resolution of token conflicts')
+        print(util.format_game_info('GAME_INFO: conflict'))
+        Requests.wait_for_action('Resolution of token conflicts')
 
-        print(util.format_info(f'Resolution of city attacks'))
+        print(util.format_info('Resolution of city attacks'))
         attacker, defender = Requests.get_players(
-            f'Please name attacker and defender separated by a comma:\n', self.players)
+            'Please name attacker and defender separated by a comma:\n', self.players)
         while attacker is not None and defender is not None:
             attacker.draw_card(defender, self.trailing_str)
             attacker, defender = Requests.get_players(
-                f'Please name attacker and defender separated by a comma:\n', self.players)
+                'Please name attacker and defender separated by a comma:\n', self.players)
 
     def phase_5_city_construction(self) -> None:
-        print(util.format_game_info(f'GAME_INFO: city construction'))
-        Requests.wait_for_action(f'Construct cities')
-        Requests.wait_for_action(f'Surplus population removal')
-        Requests.wait_for_action(f'Check city support')
+        print(util.format_game_info('GAME_INFO: city construction'))
+        Requests.wait_for_action('Construct cities')
+        Requests.wait_for_action('Surplus population removal')
+        Requests.wait_for_action('Check city support')
 
     def phase_6_trade_card_acquisition(self) -> None:
-        print(util.format_game_info(f'GAME_INFO: Trade card acquisition'))
+        print(util.format_game_info('GAME_INFO: Trade card acquisition'))
         print(util.format_info(
-            f'Please enter number of cities for each nation (or leave blank for 0)'))
+            'Please enter number of cities for each nation (or leave blank for 0)'))
         self.enter_cities()
         # drawing regular trade cards
         for player in sorted(self.players, key=lambda x: x.order_cities()):
@@ -271,12 +274,12 @@ class Game(object):
         # purchasing additional trade cards
         for player in sorted(self.players, key=lambda x: x.order_cities()):
             value = self.ask_player_to_purchase_card(player)
-            while type(value) == int:
+            while isinstance(value, int):
                 player.handcards.append(self.draw_card_from_stack(value))
                 value = self.ask_player_to_purchase_card(player)
 
     def phase_7_trade(self, trades: int = 1000) -> None:
-        print(util.format_game_info(f'GAME_INFO: resolving trades'))
+        print(util.format_game_info('GAME_INFO: resolving trades'))
         self.prepare_trading_queue()
         counter = 0
         for _ in range(trades):
@@ -288,13 +291,13 @@ class Game(object):
                 counter = 0
 
     def phase_8_calamity_selection(self) -> None:
-        print(util.format_game_info(f'GAME_INFO: resolving calamity selection'))
+        print(util.format_game_info('GAME_INFO: resolving calamity selection'))
         for player in self.players:
             calamities = player.reveal_calamities()
             self.discard_calamities(player, calamities)
 
     def phase_9_calamity_resolution(self) -> None:
-        print(util.format_game_info(f'GAME_INFO: resolving calamity resolution'))
+        print(util.format_game_info('GAME_INFO: resolving calamity resolution'))
         for calamity in sorted(self.calamities, key=lambda x: x.order_calamity(), reverse=True):
             player = self.calamities.pop(calamity)
             text = f'{self.trailing_str}{player.name} resolve {calamity.name}.'
@@ -305,24 +308,24 @@ class Game(object):
             self.discard_pile.append(calamity)
 
     def phase_10_special_abilities(self) -> None:
-        print(util.format_game_info(f'GAME_INFO: special abilities'))
+        print(util.format_game_info('GAME_INFO: special abilities'))
         if not self.resolve_provincial_empire:
             self.resolve_provincial_empire = Requests.get_confirmation(
-                f'Does Provincial Empire need to be resolved?[y]')
+                'Does Provincial Empire need to be resolved?[y]')
         if self.resolve_provincial_empire:
             attacker, defender = Requests.get_players(
-                f'Please name attacker and defender for provincial empire.\n', self.players)
+                'Please name attacker and defender for provincial empire.\n', self.players)
             while attacker is not None and defender is not None:
                 attacker.draw_card(defender, self.trailing_str)
                 attacker, defender = Requests.get_players(
-                    f'Please name attacker and defender for provincial empire.\n', self.players)
+                    'Please name attacker and defender for provincial empire.\n', self.players)
 
         if not self.resolve_trade_routes:
             self.resolve_trade_routes = Requests.get_confirmation(
-                f'Does Trade Routes need to be resolved?[y]')
+                'Does Trade Routes need to be resolved?[y]')
         if self.resolve_trade_routes:
             player = Requests.get_player(
-                f'Please name a player to use Trade Routes.', self.players)
+                'Please name a player to use Trade Routes.', self.players)
             while player is not None:
                 cards = []
                 player.discard_cards(cards, self.trailing_str*2)
@@ -330,16 +333,16 @@ class Game(object):
                 print(util.format_info(
                     f'You discarded cards with a face value of {face_value}. Please take {2*face_value} treasure tokens.'))
                 player = Requests.get_player(
-                    f'Please name a player to use Trade Routes.', self.players)
-        Requests.wait_for_action(f'Resolve other special abilities')
+                    'Please name a player to use Trade Routes.', self.players)
+        Requests.wait_for_action('Resolve other special abilities')
 
     def phase_11_remove_surplus_populations(self) -> None:
-        print(util.format_game_info(f'GAME_INFO: remove surplus populations'))
-        Requests.wait_for_action(f'Remove surplus populations')
+        print(util.format_game_info('GAME_INFO: remove surplus populations'))
+        Requests.wait_for_action('Remove surplus populations')
 
     def phase_12_civilization_advances_acquisition(self) -> None:
         print(util.format_game_info(
-            f'GAME_INFO: resolving civilization_advances_acquisition'))
+            'GAME_INFO: resolving civilization_advances_acquisition'))
         for player in self.players:
             if len(player.handcards) == 0:
                 continue
@@ -367,10 +370,10 @@ class Game(object):
             self.discard_pile += cards
 
     def phase_13_ast_alteration(self) -> None:
-        print(util.format_game_info(f'GAME_INFO: ast_alteration'))
-        Requests.wait_for_action(f'Move succession markers')
-        Requests.wait_for_action(f'Check for game end')
-        print(util.format_info(f'Reshuffling trade cards'))
+        print(util.format_game_info('GAME_INFO: ast_alteration'))
+        Requests.wait_for_action('Move succession markers')
+        Requests.wait_for_action('Check for game end')
+        print(util.format_info('Reshuffling trade cards'))
         stacks = {}
         while self.discard_pile:
             card = self.discard_pile.pop()
@@ -391,11 +394,11 @@ class Game(object):
         self.round = self.round + 1
 
     def save_game(self) -> None:
-        jsonStr = json.dumps(jsonpickle.encode(self, keys=True))
+        json_str = json.dumps(jsonpickle.encode(self, keys=True))
         file = Path(f'temp/autosave_round_{self.round}.json')
         file.parent.mkdir(parents=True, exist_ok=True)
         file.touch(exist_ok=True)
-        file.write_text(jsonStr)
+        file.write_text(json_str, encoding='utf-8')
 
     def __repr__(self) -> str:
         return self.__str__()
