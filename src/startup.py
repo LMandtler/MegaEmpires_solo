@@ -55,7 +55,7 @@ def main():
         else:
             print('Please provide a correct path to a save file.\nClosing.')
     else:
-        with open('config.conf', encoding='utf-8') as config:
+        with open('./src/config.conf', encoding='utf-8') as config:
             config = json.load(config)
         game = components.game.Game(config, options)
 
