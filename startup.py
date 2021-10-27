@@ -1,12 +1,12 @@
-import components.game
-import components.card
-import components.player
-
-from typing import Tuple, Dict
 import argparse
 import json
 from pathlib import Path
 import jsonpickle
+
+import components.game
+import components.card
+import components.player
+
 
 
 def parse_args() -> argparse.ArgumentParser:
@@ -35,12 +35,15 @@ def parse_args() -> argparse.ArgumentParser:
 #         print(f'{item[0]}: {item[1]}')
 #     print('_________EVALUATION_END____')
 
+
 def load_game(savefile: Path) -> components.game.Game:
     with savefile.open() as file:
         jsonStr = json.load(file)
-    game = jsonpickle.decode(jsonStr, classes=(components.game.Game, components.player.Player, components.card.Card), keys=True)
+    game = jsonpickle.decode(jsonStr, classes=(
+        components.game.Game, components.player.Player, components.card.Card), keys=True)
 
     return game
+
 
 def main():
     parser = parse_args()
@@ -51,14 +54,15 @@ def main():
         if savefile.exists():
             game = load_game(savefile)
         else:
-            print(f'Please provide a correct path to a save file.\nClosing.')
+            print('Please provide a correct path to a save file.\nClosing.')
     else:
-        with open('config.conf') as config:
+        with open('config.conf', encoding='utf-8') as config:
             config = json.load(config)
         game = components.game.Game(config, options)
-    
+
     while True:
         game.game_loop()
+
 
 if __name__ == '__main__':
     main()
