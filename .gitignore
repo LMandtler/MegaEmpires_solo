@@ -10,7 +10,6 @@ venv/
 # Build Folders and files
 build/
 dist/
-*.spec
 
 # save folder
 temp/
