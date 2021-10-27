@@ -5,7 +5,7 @@ from components.card import Card
 import util.texts as util
 
 
-class Player(object):
+class Player():
     def __init__(self, name: str, ast_ranking: int, handcards: List[Card]) -> None:
         self.name = name
         self.ast_ranking = ast_ranking
@@ -68,10 +68,9 @@ class Player(object):
 
         if gain_options and give_options:
             return (other, gain_options, give_options, gain_value)
-        elif gain_options:
+        if gain_options:
             return (other, gain_options, None, gain_value*0.5)
-        else:
-            return None
+        return None
 
     def trade(self, trade_option: Tuple[Player, List[Card], List[Card], int]) -> bool:
         (other, gain_options, give_options, _) = trade_option

@@ -1,6 +1,7 @@
 from typing import Tuple
 
-class Card(object):
+
+class Card():
     def __init__(self, name: str, value: int, max_count: int, additional_set: bool, calamity: str = None, tradeable: bool = True, offerable: bool = True) -> None:
         self.name = name
         self.value = value

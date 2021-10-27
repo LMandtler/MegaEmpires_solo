@@ -15,13 +15,61 @@ def print_step() -> None:
     print('____________________________________________________________')
 
 
-class Game(object):
+def get_cards_from_config(cards: Dict, options: Dict) -> Dict[int, List[Card]]:
+    stacks = {}
+    for item in cards:
+        if options.playercount in item['players']:
+            card = [Card(item['name'], item['value'], item['count'], item['additional_set'], item['calamity'],
+                         item['tradeable'], item['offerable'])] * item['count']
+            if abs(item['value']) in stacks:
+                stacks[abs(item['value'])].extend(card)
+            else:
+                stacks[abs(item['value'])] = card
+    return stacks
+
+
+def prepare_stacks(stacks: Dict[int, List[Card]], options: Dict) -> None:
+    for key, stack in stacks.items():
+        basic_commodities = list(
+            filter(lambda x: x.is_commodity() and not x.is_additional_set(), stack))
+        additional_commodities = list(
+            filter(lambda x: x.is_commodity() and x.is_additional_set(), stack))
+        minor_calamities = list(
+            filter(lambda x: x.is_minor_calamity(), stack))
+        major_calamities = list(
+            filter(lambda x: x.is_major_calamity() and x.is_tradeable(), stack))
+        non_tradeable_calamities = list(
+            filter(lambda x: x.is_major_calamity and not x.is_tradeable(), stack))
+
+        if options.playercount in range(5, 9):
+
+            # set aside as many cards as there are players from basic commodities
+            top_stack = random.sample(
+                basic_commodities, options.playercount)
+            for card in top_stack:
+                basic_commodities.remove(card)
+
+            # shuffle remaining cards and calamities
+            middle_stack = basic_commodities + major_calamities
+            random.shuffle(middle_stack)
+
+        elif options.playercount in range(9, 10):
+            top_stack = basic_commodities + minor_calamities
+            random.shuffle(top_stack)
+
+            middle_stack = additional_commodities + major_calamities
+            random.shuffle(middle_stack)
+
+        stacks[key] = top_stack + middle_stack + non_tradeable_calamities
+
+
+class Game():
     def __init__(self, config: Dict, options: Dict) -> None:
         self.stacks = {1: [], 2: [], 3: [], 4: [],
                        5: [], 6: [], 7: [], 8: [], 9: []}
 
-        stacks = self.get_cards_from_config(config['cards'], options)
-        self.prepare_stacks(stacks, options)
+        stacks = get_cards_from_config(config['cards'], options)
+        prepare_stacks(stacks, options)
         self.add_cards_to_stacks(stacks)
 
         self.prepare_civilizations_from_config(
@@ -44,56 +92,6 @@ class Game(object):
             "Banditry": self.resolve_banditry,
             "Corruption": self.resolve_corruption,
         }
-
-    def get_cards_from_config(self, cards: Dict, options: Dict) -> Dict[int, List[Card]]:
-        stacks = {}
-        for item in cards:
-            if options.playercount in item['players']:
-                card = [Card(item['name'], item['value'], item['count'], item['additional_set'], item['calamity'],
-                             item['tradeable'], item['offerable'])] * item['count']
-                if abs(item['value']) in stacks:
-                    stacks[abs(item['value'])].extend(card)
-                else:
-                    stacks[abs(item['value'])] = card
-        return stacks
-
-    def prepare_stacks(self, stacks: Dict[int, List[Card]], options: Dict) -> None:
-        for key, stack in stacks.items():
-            basic_commodities = list(
-                filter(lambda x: x.is_commodity() and not x.is_additional_set(), stack))
-            additional_commodities = list(
-                filter(lambda x: x.is_commodity() and x.is_additional_set(), stack))
-            minor_calamities = list(
-                filter(lambda x: x.is_minor_calamity(), stack))
-            major_calamities = list(
-                filter(lambda x: x.is_major_calamity() and x.is_tradeable(), stack))
-            non_tradeable_calamities = list(
-                filter(lambda x: x.is_major_calamity and not x.is_tradeable(), stack))
-
-            if options.playercount in range(5, 9):
-
-                # set aside as many cards as there are players from basic commodities
-                top_stack = random.sample(
-                    basic_commodities, options.playercount)
-                for card in top_stack:
-                    basic_commodities.remove(card)
-
-                # shuffle remaining cards and calamities
-                middle_stack = basic_commodities + major_calamities
-                random.shuffle(middle_stack)
-
-            elif options.playercount in range(9, 10):
-                top_stack = basic_commodities + minor_calamities
-                random.shuffle(top_stack)
-
-                middle_stack = additional_commodities + major_calamities
-                random.shuffle(middle_stack)
-
-            stacks[key] = top_stack + middle_stack + non_tradeable_calamities
-
-    def shuffle_stacks(self, stacks: Dict[int, List[Card]]) -> None:
-        for stack in stacks.values():
-            random.shuffle(stack)
 
     def prepare_civilizations_from_config(self, civilizations: Dict, options: Dict) -> None:
         self.players: List[Player] = []
@@ -129,7 +127,7 @@ class Game(object):
             offer = actor.evaluate_offer(other_player)
             if max_value is None and offer is not None:
                 max_value = offer
-            elif offer is not None and offer[3] > max_value[3]: # pylint: disable=E1136  # pylint/issues/3139
+            elif offer is not None and offer[3] > max_value[3]:  # pylint: disable=E1136  # pylint/issues/3139
                 max_value = offer
 
         self.trading_queue.append(actor)
@@ -141,10 +139,8 @@ class Game(object):
                 else:
                     actor.trades[self.round] = 1
                 return True
-            else:
-                return False
-        else:
             return False
+        return False
 
     def discard_excess_calamities(self, calamities: List[Card], threshold: int) -> None:
         while len(calamities) > threshold:

@@ -8,7 +8,6 @@ import components.card
 import components.player
 
 
-
 def parse_args() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description='Automize trading in Mega Empires')
@@ -38,8 +37,8 @@ def parse_args() -> argparse.ArgumentParser:
 
 def load_game(savefile: Path) -> components.game.Game:
     with savefile.open() as file:
-        jsonStr = json.load(file)
-    game = jsonpickle.decode(jsonStr, classes=(
+        json_str = json.load(file)
+    game = jsonpickle.decode(json_str, classes=(
         components.game.Game, components.player.Player, components.card.Card), keys=True)
 
     return game

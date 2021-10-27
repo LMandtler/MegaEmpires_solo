@@ -1,14 +1,14 @@
 from __future__ import annotations
 from typing import List, Dict, Tuple
+import random
 from components.card import Card
 import util.texts as util
-import random
 
 
-class Handcards(object):
-    def __init__(self, cards: List[Card] = []) -> None:
+class Handcards():
+    def __init__(self, cards: List[Card] = None) -> None:
         super().__init__()
-        self.cards: List[Card] = cards.copy()
+        self.cards: List[Card] = cards.copy() if cards else []
 
     def append(self, card: Card) -> None:
         self.cards.append(card)
@@ -103,11 +103,11 @@ class Handcards(object):
         print(util.format_info(self.__str__(preceding_str=preceding_str)))
 
         discards = input(util.format_action(
-            f'Please name cards you want to discard in comma-separated fashion. trailing - for whole set:\n')).split(',')
+            'Please name cards you want to discard in comma-separated fashion. trailing - for whole set:\n')).split(',')
         for discard in discards:
             if discard == '':
                 continue
-            elif discard[0] == '-':
+            if discard[0] == '-':
                 # get the whole set within the handcards
                 extracted_cards = [
                     card for card in self.cards if card.name == discard[1:]]
@@ -131,18 +131,18 @@ class Handcards(object):
         return sorted(self.values().items(), key=lambda x: (x[1][1], x[0].value), reverse=reverse)
 
     def sorted_set(self, reverse: bool = False) -> List[Card]:
-        return sorted(list(set(self.cards)), key=lambda x: (x.value, self.set_value(x), x.name), reverse=True)
+        return sorted(list(set(self.cards)), key=lambda x: (x.value, self.set_value(x), x.name), reverse=reverse)
 
     def order_by_internal_value(self, card: Card) -> Tuple[int, int, int, str]:
         return (self.get_internal_value(card), self.set_value(card), card.value, card.name)
 
     def __str__(self, calamities: bool = False, preceding_str: str = '') -> str:
-        str = ''
+        text = ''
         sorted_handcards = self.sorted_set(reverse=True)
         if not calamities:
             sorted_handcards = filter(lambda x: x.value >= 0, sorted_handcards)
         for card in sorted_handcards:
             count = self.cards.count(card)
-            str += f'{preceding_str}{"*" if count == card.max_count else " "}{card.name:<10}({card.value}): {count}/{card.max_count} cards with a set value of {self.set_value(card):>3}\n'
+            text += f'{preceding_str}{"*" if count == card.max_count else " "}{card.name:<10}({card.value}): {count}/{card.max_count} cards with a set value of {self.set_value(card):>3}\n'
 
-        return str
+        return text
